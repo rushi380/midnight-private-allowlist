@@ -1,0 +1,83 @@
+{
+  "name": "midnight-private-allowlist",
+  "version": "1.0.0",
+  "description": "Privacy-preserving allowlist access dApp built on the Midnight blockchain using zero-knowledge proofs and Merkle trees",
+  "private": true,
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json && vite build",
+    "build:server": "tsc --project tsconfig.build.json",
+    "build:client": "vite build",
+    "dev": "vite",
+    "start": "node dist/server/api/server.js",
+    "test": "jest --coverage",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "deploy": "ts-node scripts/deploy.ts",
+    "setup:testnet": "ts-node scripts/setupTestnet.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "merkletreejs": "^0.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/crypto-js": "^4.2.2",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.13",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "collectCoverageFrom": [
+      "src/services/**/*.ts",
+      "src/utils/**/*.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 50,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/midnight-private-allowlist"
+  },
+  "keywords": [
+    "midnight",
+    "blockchain",
+    "privacy",
+    "zero-knowledge",
+    "allowlist",
+    "merkle-tree",
+    "zk-proof"
+  ]
+}
