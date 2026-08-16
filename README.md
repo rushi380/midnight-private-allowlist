@@ -1,7 +1,7 @@
 # 🌙 Midnight Private Allowlist Access dApp
 
-[![Tests](https://github.com/YOUR_USERNAME/midnight-private-allowlist/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/midnight-private-allowlist/actions/workflows/test.yml)
-[![Build](https://github.com/YOUR_USERNAME/midnight-private-allowlist/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/midnight-private-allowlist/actions/workflows/build.yml)
+[![Tests](https://github.com/rushi380/midnight-private-allowlist/actions/workflows/test.yml/badge.svg)](https://github.com/rushi380/midnight-private-allowlist/actions/workflows/test.yml)
+[![Build](https://github.com/rushi380/midnight-private-allowlist/actions/workflows/build.yml/badge.svg)](https://github.com/rushi380/midnight-private-allowlist/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-7c3aed.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-green)](https://nodejs.org)
 [![Midnight](https://img.shields.io/badge/Midnight-Testnet-blueviolet)](https://midnight.network)
@@ -118,7 +118,7 @@ To deploy your own instance, see the [Deployment Guide](#-deployment-guide).
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/midnight-private-allowlist.git
+git clone https://github.com/rushi380/midnight-private-allowlist.git
 cd midnight-private-allowlist
 
 # 2. Install dependencies
