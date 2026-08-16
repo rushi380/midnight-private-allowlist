@@ -1,0 +1,72 @@
+name: 🧪 Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Build server (TypeScript)
+        run: npm run build:server
+
+      - name: 🧪 Run unit tests
+        run: npm run test:unit -- --ci --coverage --verbose
+        env:
+          NODE_ENV: test
+          COMMITMENT_SECRET: ci-test-secret-12345
+          JWT_SECRET: ci-test-jwt-secret
+
+      - name: 🔗 Run integration tests
+        run: npm run test:integration -- --ci --verbose
+        env:
+          NODE_ENV: test
+          COMMITMENT_SECRET: ci-test-secret-12345
+          JWT_SECRET: ci-test-jwt-secret
+
+      - name: 📊 Run full test suite with coverage
+        run: npm test -- --ci --coverage --coverageReporters=text --coverageReporters=lcov
+        env:
+          NODE_ENV: test
+          COMMITMENT_SECRET: ci-test-secret-12345
+          JWT_SECRET: ci-test-jwt-secret
+
+      - name: 📤 Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '22.x'
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: ✅ Test summary
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🌙 Midnight Private Allowlist — Test Results"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Node.js: ${{ matrix.node-version }}"
+          echo "Branch:  ${{ github.ref_name }}"
+          echo "Commit:  ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
