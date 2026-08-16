@@ -1,0 +1,218 @@
+// ════════════════════════════════════════════════════════════════════════════
+// Private Allowlist Access — Midnight Smart Contract (Compact Language)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// DEPLOYMENT INFORMATION:
+//   Network:          Midnight Testnet
+//   Contract Address: <YOUR_DEPLOYED_ADDRESS_HERE>
+//   Explorer:         https://explorer.testnet.midnight.network/contract/<ADDRESS>
+//   Deployed By:      <YOUR_ADMIN_ADDRESS_HERE>
+//   Language Version: Compact >= 0.21.0
+//
+// PRIVACY MODEL:
+//   ✓ No plaintext user addresses stored on-chain
+//   ✓ Proofs contain only commitments, never identity
+//   ✓ Merkle root is public; the membership list is private
+//   ✓ Observers can see: root hash, verification count, accepted/rejected
+//   ✗ Observers cannot see: who is on the list, who submitted a proof,
+//     list size, member positions
+//
+// To compile:
+//   compactc src/contracts/PrivateAllowlist.compact --output managed/
+//
+// ════════════════════════════════════════════════════════════════════════════
+
+pragma language_version >= 0.21.0;
+
+import CompactStandardLibrary;
+
+// ─── Contract Declaration ────────────────────────────────────────────────────
+export contract PrivateAllowlist {
+
+  // ── Ledger State (public, visible on-chain) ─────────────────────────────
+
+  // The Merkle root of the hashed allowlist.
+  // PRIVATE: only the root hash is stored — the actual list of members is
+  // never revealed on-chain. An observer learns only that a valid root exists.
+  ledger merkle_root: Bytes<32>;
+
+  // Admin address (hashed) — controls root updates.
+  // Stored as a hash so the admin's identity is protected on-chain.
+  ledger admin_commitment: Bytes<32>;
+
+  // Aggregate statistics — reveals only total volume, never individual users.
+  ledger verification_count: Uint<64>;
+  ledger rejection_count: Uint<64>;
+
+  // Nullifier set — prevents replay attacks.
+  // Maps proof nullifiers (hashes) to timestamps. Stores only hashes, not
+  // the original proof data.
+  ledger used_nullifiers: Map<Bytes<32>, Uint<64>>;
+
+  // Contract initialization flag.
+  ledger initialized: Boolean;
+
+
+  // ── Constructor ─────────────────────────────────────────────────────────
+
+  // Initialize the contract with an admin commitment and initial Merkle root.
+  // The admin_secret is a private witness — it never appears on-chain.
+  export circuit initialize(
+    initial_root:     Bytes<32>,
+    admin_commitment: Bytes<32>
+  ): [] {
+    // Ensure this can only be called once
+    assert initialized == false, "Contract already initialized";
+
+    ledger.merkle_root       = disclose(initial_root);
+    ledger.admin_commitment  = disclose(admin_commitment);
+    ledger.verification_count = disclose(0 as Uint<64>);
+    ledger.rejection_count    = disclose(0 as Uint<64>);
+    ledger.initialized        = disclose(true);
+  }
+
+
+  // ── Admin Circuit ────────────────────────────────────────────────────────
+
+  // Update the Merkle root (e.g., when the allowlist changes).
+  // The admin_secret is a private witness — proves admin identity without
+  // revealing who the admin is.
+  export circuit set_merkle_root(
+    new_root:     Bytes<32>,
+    admin_secret: Bytes<32>   // PRIVATE witness — never disclosed
+  ): [] {
+    assert initialized == true, "Contract not initialized";
+
+    // Verify admin identity by checking commitment against witness
+    // hash(admin_secret) must equal admin_commitment stored on ledger
+    let computed_commitment: Bytes<32> = sha256(admin_secret);
+    assert computed_commitment == ledger.admin_commitment,
+      "Unauthorized: invalid admin secret";
+
+    ledger.merkle_root = disclose(new_root);
+  }
+
+
+  // ── Verification Circuit ─────────────────────────────────────────────────
+
+  // Verify a membership proof against the current Merkle root.
+  //
+  // Private inputs (witnesses — never stored or revealed):
+  //   - leaf_hash:    hash(address || salt) — hashed member identity
+  //   - merkle_path:  sibling hashes needed to reconstruct root
+  //   - path_indices: left/right directions through the tree
+  //   - nonce:        random value ensuring proof uniqueness
+  //
+  // Public inputs (go on-chain):
+  //   - commitment:   hash(leaf_hash || nonce) — binds proof to submitter
+  //   - nullifier:    hash(leaf_hash || domain_separator) — prevents replay
+  //
+  // Privacy guarantee: commitment and nullifier are hashes of private data.
+  // An observer cannot reverse-engineer identity from these values.
+  export circuit verify_membership(
+    // Public inputs (disclosed on-chain)
+    commitment: Bytes<32>,
+    nullifier:  Bytes<32>,
+
+    // Private witnesses (ZK — never revealed)
+    leaf_hash:    Bytes<32>,
+    nonce:        Bytes<32>,
+    merkle_path:  Vector<10, Bytes<32>>,
+    path_indices: Vector<10, Boolean>
+  ): Boolean {
+    assert initialized == true, "Contract not initialized";
+
+    // 1. Verify nullifier has not been used (replay protection)
+    let already_used: Boolean = ledger.used_nullifiers.member(nullifier);
+    assert already_used == false, "Proof already used (replay detected)";
+
+    // 2. Verify commitment matches leaf_hash and nonce
+    //    commitment = hash(leaf_hash || nonce)
+    let expected_commitment: Bytes<32> = sha256(leaf_hash ++ nonce);
+    assert expected_commitment == commitment,
+      "Invalid commitment: does not match leaf and nonce";
+
+    // 3. Reconstruct and verify the Merkle path
+    let computed_root: Bytes<32> = compute_merkle_root(
+      leaf_hash,
+      merkle_path,
+      path_indices
+    );
+    let is_valid: Boolean = (computed_root == ledger.merkle_root);
+
+    // 4. Record nullifier to prevent replay (only if valid)
+    if is_valid {
+      ledger.used_nullifiers[nullifier] = disclose(
+        current_timestamp() as Uint<64>
+      );
+      ledger.verification_count = disclose(
+        ledger.verification_count + (1 as Uint<64>)
+      );
+    } else {
+      ledger.rejection_count = disclose(
+        ledger.rejection_count + (1 as Uint<64>)
+      );
+    }
+
+    return disclose(is_valid);
+  }
+
+
+  // ── Read Circuits (no state change) ─────────────────────────────────────
+
+  // Returns the current public Merkle root.
+  export circuit get_root(): Bytes<32> {
+    assert initialized == true, "Contract not initialized";
+    return ledger.merkle_root;
+  }
+
+  // Returns aggregate verification statistics.
+  // Note: this reveals only counts, never individual identities.
+  export circuit get_stats(): (Uint<64>, Uint<64>) {
+    assert initialized == true, "Contract not initialized";
+    return (ledger.verification_count, ledger.rejection_count);
+  }
+
+  // Checks if a specific nullifier has been used.
+  // This reveals only whether this nullifier was used, not who used it.
+  export circuit is_nullifier_used(nullifier: Bytes<32>): Boolean {
+    return ledger.used_nullifiers.member(nullifier);
+  }
+
+
+  // ── Internal Helper Circuits ─────────────────────────────────────────────
+
+  // Computes Merkle root from leaf, sibling path, and direction indices.
+  // This is a pure ZK computation — all inputs are private witnesses.
+  circuit compute_merkle_root(
+    leaf:         Bytes<32>,
+    siblings:     Vector<10, Bytes<32>>,
+    is_right:     Vector<10, Boolean>
+  ): Bytes<32> {
+    let current: Bytes<32> = leaf;
+    for i in 0..10 {
+      let sibling: Bytes<32>  = siblings[i];
+      let right:   Boolean    = is_right[i];
+
+      // If current node is on the right, sibling goes left (and vice versa)
+      current = if right {
+        sha256(sibling ++ current)
+      } else {
+        sha256(current ++ sibling)
+      };
+    }
+    return current;
+  }
+
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// END OF CONTRACT
+//
+// To deploy on Midnight Testnet:
+//   1. Install compactc: https://docs.midnight.network/tools/compactc
+//   2. Compile: compactc src/contracts/PrivateAllowlist.compact
+//   3. Run: npx ts-node scripts/deploy.ts
+//   4. Update CONTRACT_ADDRESS in .env with the returned address
+//   5. Update README.md with the deployed contract address
+// ════════════════════════════════════════════════════════════════════════════
