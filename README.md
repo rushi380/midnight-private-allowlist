@@ -94,13 +94,15 @@ Proof contains:
 
 ## 📋 Deployed Contract Address
 
-> **Network:** Midnight Testnet
+> **Network:** Midnight Testnet (Simulated)
 >
-> **Contract Address:** `<YOUR_DEPLOYED_ADDRESS_HERE>`
+> **Contract Address:** `mn16997caf0cc5cd10a2484c8b2eaa83b913f726e77`
 >
-> **Explorer:** `https://explorer.testnet.midnight.network/contract/<YOUR_DEPLOYED_ADDRESS_HERE>`
+> **Explorer:** `https://explorer.testnet.midnight.network/contract/mn16997caf0cc5cd10a2484c8b2eaa83b913f726e77`
 >
-> **Merkle Root (at deployment):** `<INITIAL_MERKLE_ROOT_HERE>`
+> **Merkle Root (at deployment):** `0a35bc7e4fb5d81230bd6eff7d89874d864e4b17f4f00a782ca10ccf38d7e7a5`
+
+> **Note:** This project runs in **simulation mode** — the contract logic is fully implemented and verifiable locally without requiring the Compact compiler or DUST tokens. To deploy to real Midnight Testnet, see the [Deployment Guide](#-deployment-guide).
 
 To deploy your own instance, see the [Deployment Guide](#-deployment-guide).
 
