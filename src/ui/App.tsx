@@ -3,18 +3,40 @@ import ProofGenerator from './ProofGenerator';
 import VerificationResult from './VerificationResult';
 import AllowlistManager from './components/AllowlistManager';
 import PrivacyVisualizer from './components/PrivacyVisualizer';
+import { PrivateMerkleTree } from '../services/merkleTree';
 import type { ProofData, VerificationResult as VResult } from '../contracts/types/index';
 
 type Tab = 'generate' | 'verify' | 'admin' | 'privacy';
 
-const CONTRACT_ADDRESS = import.meta.env['VITE_CONTRACT_ADDRESS'] ?? '<YOUR_DEPLOYED_ADDRESS>';
+const RAW_CONTRACT = import.meta.env['VITE_CONTRACT_ADDRESS'] ?? '';
+const CONTRACT_ADDRESS = RAW_CONTRACT || null; // null = not deployed
 const NETWORK = import.meta.env['VITE_NETWORK'] ?? 'testnet';
+
+// Demo allowlist — same addresses used by the API and ProofGenerator
+const DEMO_ALLOWLIST = [
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+  '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+  '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
+  '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
+  '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
+];
+
+/** Compute the Merkle root client-side so it never gets stuck loading. */
+function computeLocalRoot(): string {
+  try {
+    const tree = new PrivateMerkleTree({ salt: 'dev-secret-change-in-production' });
+    tree.buildTree(DEMO_ALLOWLIST);
+    return tree.getRoot();
+  } catch {
+    return '';
+  }
+}
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('generate');
   const [generatedProof, setGeneratedProof] = useState<ProofData | null>(null);
   const [verificationResult, setVerificationResult] = useState<VResult | null>(null);
-  const [merkleRoot, setMerkleRoot] = useState<string>('');
+  const [merkleRoot, setMerkleRoot] = useState<string>(computeLocalRoot);
   const [statsCount, setStatsCount] = useState({ verifications: 0, rejections: 0 });
 
   useEffect(() => {
@@ -24,10 +46,12 @@ const App: React.FC = () => {
   const fetchPublicRoot = async () => {
     try {
       const res = await fetch('/api/public-root');
+      if (!res.ok) return;
       const data = await res.json();
+      // Prefer live API root; fall back to local if absent
       if (data.merkleRoot) setMerkleRoot(data.merkleRoot);
     } catch {
-      // API not available in pure frontend mode
+      // API not available — local root already shown
     }
   };
 
@@ -135,16 +159,30 @@ const App: React.FC = () => {
       }}>
         <div className="container flex items-center gap-4" style={{ flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>CONTRACT:</span>
-          <code style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            color: 'var(--color-text-accent)',
-          }}>
-            {CONTRACT_ADDRESS}
-          </code>
+          {CONTRACT_ADDRESS ? (
+            <code style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.8rem',
+              color: 'var(--color-text-accent)',
+            }}>
+              {CONTRACT_ADDRESS}
+            </code>
+          ) : (
+            <span style={{
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-mono)',
+              background: 'rgba(251,191,36,0.12)',
+              color: '#fbbf24',
+              border: '1px solid rgba(251,191,36,0.25)',
+              borderRadius: '6px',
+              padding: '2px 10px',
+            }}>
+              ⚠ Not Deployed · Demo Mode
+            </span>
+          )}
           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
             MERKLE ROOT: <code style={{ color: '#67e8f9', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
-              {merkleRoot ? `${merkleRoot.slice(0, 20)}...` : 'Loading...'}
+              {merkleRoot ? `${merkleRoot.slice(0, 20)}...` : '—'}
             </code>
           </span>
         </div>
