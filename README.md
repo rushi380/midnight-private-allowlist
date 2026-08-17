@@ -5,10 +5,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-7c3aed.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-green)](https://nodejs.org)
 [![Midnight](https://img.shields.io/badge/Midnight-Testnet-blueviolet)](https://midnight.network)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?logo=vercel)](https://vercel.com/rushi380s-projects/midnight-private-allowlist)
+[![Demo Video](https://img.shields.io/badge/Demo-Loom%20Video-00D4AA?logo=loom)](https://www.loom.com/share/438d4e649a9440c7af7ebefc0aa270a6)
 
 > **Prove you're on the allowlist — without revealing who you are.**
 
 A privacy-preserving access control dApp built on the [Midnight blockchain](https://midnight.network) using zero-knowledge proofs and Merkle trees. Users prove membership in an allowlist without exposing their identity, wallet address, or position in the list.
+
+---
+
+## 🌐 Live Demo
+
+| | Link |
+|---|---|
+| 🚀 **Vercel Deployment** | [midnight-private-allowlist on Vercel](https://vercel.com/rushi380s-projects/midnight-private-allowlist) |
+| 🎬 **Video Walkthrough** | [Watch on Loom](https://www.loom.com/share/438d4e649a9440c7af7ebefc0aa270a6) |
 
 ---
 
