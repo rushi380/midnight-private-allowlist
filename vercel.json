@@ -6,7 +6,6 @@
   "framework": null,
   "functions": {
     "api/index.ts": {
-      "runtime": "@vercel/node@3",
       "memory": 256,
       "maxDuration": 30
     }
